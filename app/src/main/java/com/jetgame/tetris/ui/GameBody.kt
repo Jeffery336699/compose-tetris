@@ -160,10 +160,9 @@ fun GameBody(
             }
         }
 
-
         Spacer(modifier = Modifier.height(30.dp))
 
-
+        // Optimize: 自我思考，这里充分体现Composable强于View体系的优势，可以调用任意多次（函数）而非View只能存在于一个父容器中
         //Game Button
         val ButtonText = @Composable { modifier: Modifier,
                                        text: String ->

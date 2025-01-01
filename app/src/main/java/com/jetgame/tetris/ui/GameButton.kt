@@ -53,6 +53,11 @@ fun GameButton(
     Box(
         modifier = modifier
             .shadow(5.dp, shape = backgroundShape)
+            /**
+             * Optimize:
+             *  1. 注意这里有个细节，外面的modifier是已经设置了Row环境下的weight=1的，就算这里设置了size并不会覆盖掉weight=1的效果
+             *  2. 详细看MainActivity.kt中的DefaultPreview2的代码演示，结论就是Modifier前面的修饰符优先级要高一些，后面没法把前者覆盖
+             */
             .size(size = size)
             .clip(backgroundShape)
             .background(
@@ -70,6 +75,7 @@ fun GameButton(
                     pointerInteropFilter {
                         when (it.action) {
                             ACTION_DOWN -> {
+                                // 1. 这里应该是处理水波纹效果
                                 coroutineScope.launch {
                                     // Remove any old interactions if we didn't fire stop / cancel properly
                                     pressedInteraction.value?.let { oldValue ->
@@ -82,7 +88,7 @@ fun GameButton(
                                     pressedInteraction.value = interaction
                                 }
 
-
+                                // 2. 这里应该是处理长按的情况下，不断触发“点击事件”（人工生成给你）
                                 ticker = ticker(initialDelayMillis = 300, delayMillis = 60)
                                 coroutineScope.launch {
                                     ticker

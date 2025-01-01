@@ -46,8 +46,16 @@ fun LedClock(modifier: Modifier = Modifier) {
     )
 
     var clock by remember { mutableStateOf(0 to 0) }
-
+    // Optimize: DisposableEffect的key值变化或者Composable的销毁，都会触发onDispose的回调；
+    //  但是这里的目的主要是根据key的变化触发内部的lambda重新执行
     DisposableEffect(key1 = animateValue.roundToInt()) {
+        /**
+         * 每隔半秒钟，内部的时间戳刷新一次
+         * 111 time:1735718340070
+         * 111 time:1735718340578
+         * 111 time:1735718341073
+         */
+        println("111 time:${System.currentTimeMillis()}")
         @SuppressLint("SimpleDateFormat")
         val dateFormat: DateFormat = SimpleDateFormat("H,m")
         val (curHou, curMin) = dateFormat.format(Date()).split(",")
@@ -105,7 +113,7 @@ fun LedNumber(
                     "8",
                     fontSize = textSize,
                     color = BrickMatrix,
-                    fontFamily = LedFontFamily,
+                    fontFamily = LedFontFamily, // 借助自定义字体的方式，实现了类似LED的效果（数字屏的效果）
                     modifier = Modifier.width(textWidth),
                     textAlign = TextAlign.End
 

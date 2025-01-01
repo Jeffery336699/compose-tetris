@@ -22,6 +22,9 @@ data class Spirit(
         return copy(shape = newShape)
     }
 
+    /**
+     * 当前形状偏移调整使其可以在规定的matrix中显示,一般用于右侧4x2的计分板nextSpirit形状
+     */
     fun adjustOffset(matrix: Pair<Int, Int>, adjustY: Boolean = true): Spirit {
         val yOffset =
             if (adjustY)
@@ -66,3 +69,14 @@ fun generateSpiritReverse(matrix: Pair<Int, Int>): List<Spirit> {
         Spirit(it, Offset(Random.nextInt(matrix.first - 1), -1)).adjustOffset(matrix, false)
     }.shuffled()
 }
+
+/** 生成List<Brick> */
+fun testGenerateListBrick(index: Int = 0,downStep:Boolean = true): List<Brick> {
+    return Brick.of(SpiritType[index.coerceIn(SpiritType.indices)].map { it + Offset(0, if (downStep) 1 else 0) })
+}
+
+/** 生成Spirit */
+fun testGenerateSpirit(index: Int = 0 ,downStep:Boolean = true): Spirit {
+    return Spirit(SpiritType[index.coerceIn(SpiritType.indices)], Offset(0, if (downStep) 1 else 0))
+}
+

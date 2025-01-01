@@ -49,6 +49,8 @@ import com.jetgame.tetris.logic.GameViewModel
 import com.jetgame.tetris.logic.NextMatrix
 import com.jetgame.tetris.logic.Spirit
 import com.jetgame.tetris.logic.SpiritType
+import com.jetgame.tetris.logic.testGenerateListBrick
+import com.jetgame.tetris.logic.testGenerateSpirit
 import com.jetgame.tetris.ui.theme.BrickMatrix
 import com.jetgame.tetris.ui.theme.BrickSpirit
 import com.jetgame.tetris.ui.theme.ScreenBackground
@@ -78,6 +80,7 @@ fun GameScreen(modifier: Modifier = Modifier) {
             ),
         )
 
+        // Optimize: 这个Canvas用的精髓，可以借助DrawScope的绘制能力，实现自定义的绘制逻辑;并且很重要的一点可以知道当前的size(提供当前绘图环境的尺寸)
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
@@ -88,18 +91,29 @@ fun GameScreen(modifier: Modifier = Modifier) {
                 size.width / viewState.matrix.first,
                 size.height / viewState.matrix.second
             )
+            // 测试代码
+            // drawRect(Color.Red, size = size, style = Stroke(0.1.dp.toPx()))
 
+            // Optimize: 注意Canvas中默认是沿着z轴往上的图层堆叠绘制的
             drawMatrix(brickSize, viewState.matrix)
             drawMatrixBorder(brickSize, viewState.matrix)
-            drawBricks(viewState.bricks, brickSize, viewState.matrix)
-            drawSpirit(viewState.spirit, brickSize, viewState.matrix)
-            drawText(viewState.gameStatus, brickSize, viewState.matrix, animateValue)
+            drawBricks(viewState.bricks/*testGenerateListBrick()*/, brickSize, viewState.matrix)
+            drawSpirit(viewState.spirit/*testGenerateSpirit()*/, brickSize, viewState.matrix)
+            drawText(viewState.gameStatus, brickSize, viewState.matrix, /*animateValue*/1f)
 
         }
+        /**
+         * rotate规则： newShape[i] = Offset(shape[i].y, -shape[i].x)
+         * 111 testGenerateSpirit():[Offset(1.0, -1.0), Offset(1.0, 0.0), Offset(0.0, 0.0), Offset(0.0, 1.0)]
+         * 222 testGenerateSpirit():[Offset(-1.0, -1.0), Offset(0.0, -1.0), Offset(0.0, 0.0), Offset(1.0, 0.0)]
+         */
+        println("111 testGenerateSpirit():${testGenerateSpirit(downStep = false).location}")
+        println("222 testGenerateSpirit().rotate():${testGenerateSpirit(downStep = false).rotate().location}")
 
         GameScoreboard(
+            // 这里旋转的含义是，形状的高度可能大于2，但是面板这儿摆放的高度最多为2，任意形状旋转一下就能完全呈现得下 Optimize: 这里是不需要偏移的，因为反正是要做一层旋转的
             spirit = run {
-                if (viewState.spirit == Spirit.Empty) Spirit.Empty
+                if (viewState.spirit == Spirit.Empty) /*Spirit.Empty*/ testGenerateSpirit(downStep = false).rotate()
                 else viewState.spiritNext.rotate()
             },
             score = viewState.score,
@@ -155,6 +169,12 @@ fun GameScoreboard(
                     .padding(10.dp)
             ) {
                 drawMatrix(brickSize, NextMatrix)
+                /**
+                 * 前location：[Offset(-1.0, -1.0), Offset(0.0, -1.0), Offset(0.0, 0.0), Offset(1.0, 0.0)]
+                 * 后location：[Offset(0.0, 0.0), Offset(1.0, 0.0), Offset(1.0, 1.0), Offset(2.0, 1.0)]
+                 */
+                println("前location：${spirit.location}")
+                println("后location：${spirit.adjustOffset(NextMatrix).location}")
                 drawSpirit(
                     spirit.adjustOffset(NextMatrix),
                     brickSize = brickSize, NextMatrix
@@ -207,7 +227,7 @@ private fun DrawScope.drawText(
                 Paint().apply {
                     color = Color.Black.copy(alpha = alpha).toArgb()
                     textSize = size
-                    textAlign = Paint.Align.CENTER
+                    textAlign = Paint.Align.CENTER // 上述使用center点可能跟这个设置的是CENTER有关
                     style = Paint.Style.FILL_AND_STROKE
                     strokeWidth = size / 12
                 }
@@ -253,11 +273,16 @@ private fun DrawScope.drawMatrixBorder(brickSize: Float, matrix: Pair<Int, Int>)
 }
 
 private fun DrawScope.drawBricks(brick: List<Brick>, brickSize: Float, matrix: Pair<Int, Int>) {
+    // 这里也挺精细化的，借助clipRect裁剪优化仅仅在matrix范围内绘制；有点需要注意，drawMatrixBorder中偏移的那部分可以当做
+    // 是另起的一个图层进行（类似canvas.save/restore）;实际的仍然是左上（0，0），然后matrix宽高内作画
     clipRect(
         0f, 0f,
         matrix.first * brickSize,
         matrix.second * brickSize
     ) {
+        // testGenerateListBrick()为例[默认往下偏移一位后的坐标]
+        // listOf(Offset(1, 0), Offset(1, 1), Offset(0, 1), Offset(0, 2))
+        // Optimize: 尼玛，真正绘制运动中的方块时，此时的颜色是BrickSpirit深黑色（就此区别，666）
         brick.forEach {
             drawBrick(brickSize, it.location, BrickSpirit)
         }
@@ -282,10 +307,10 @@ private fun DrawScope.drawSpirit(spirit: Spirit, brickSize: Float, matrix: Pair<
 
 private fun DrawScope.drawBrick(
     brickSize: Float,
-    offset: Offset,
+    offset: Offset, // 这里面传递过来的是x、y轴的索引
     color: Color
 ) {
-
+    // 这里仅仅只是基准锚点，还需要根据内外边框的大小来计算实际的位置
     val actualLocation = Offset(
         offset.x * brickSize,
         offset.y * brickSize
@@ -294,10 +319,12 @@ private fun DrawScope.drawBrick(
     val outerSize = brickSize * 0.8f
     val outerOffset = (brickSize - outerSize) / 2
 
+    // Optimize: style用来控制是绘制实心还是空心，这里Stroke绘制的是边框，默认情况下Fill是实心。
+    //  所以颜色也是根据你绘制的是啥就应用到啥上（eg.这里绘制边框color就是应用到边框上）
     drawRect(
         color,
         topLeft = actualLocation + Offset(outerOffset, outerOffset),
-        size = Size(outerSize, outerSize),
+        size = Size(outerSize, outerSize), // 有意思，实际还是绘制的填充大小，剩下的边框就是在此基础上绘制的
         style = Stroke(outerSize / 10)
     )
 

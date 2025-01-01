@@ -239,6 +239,7 @@ class GameViewModel : ViewModel() {
         return Triple(bricks, clearing, cleared) to clearLines.size
     }
 
+    // MVI中UI层监听的状态，通常使用mutableStateOf包裹，这样在ViewModel中修改状态时，UI层使用到的地方会自动刷新（重组）
     data class ViewState(
         val bricks: List<Brick> = emptyList(),
         val spirit: Spirit = Empty,
