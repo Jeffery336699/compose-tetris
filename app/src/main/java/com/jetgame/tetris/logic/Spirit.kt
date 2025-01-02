@@ -23,7 +23,7 @@ data class Spirit(
     }
 
     /**
-     * 当前形状偏移调整使其可以在规定的matrix中显示,一般用于右侧4x2的计分板nextSpirit形状
+     * 当前形状偏移调整使其可以在规定的matrix中显示（一般用于右侧4x2的计分板nextSpirit形状）
      */
     fun adjustOffset(matrix: Pair<Int, Int>, adjustY: Boolean = true): Spirit {
         val yOffset =
@@ -63,9 +63,16 @@ fun Spirit.isValidInMatrix(blocks: List<Brick>, matrix: Pair<Int, Int>): Boolean
     }
 }
 
+fun Spirit.findInValidInMatrix(blocks: List<Brick>, matrix: Pair<Int, Int>): Offset? {
+    return location.find { location ->
+        location.x < 0 || location.x > matrix.first - 1 || location.y > matrix.second - 1 ||
+                blocks.any { it.location.x == location.x && it.location.y == location.y }
+    }
+}
 
 fun generateSpiritReverse(matrix: Pair<Int, Int>): List<Spirit> {
     return SpiritType.map {
+        // y轴往上偏移一个单位是在这里进行的（生成的时候）
         Spirit(it, Offset(Random.nextInt(matrix.first - 1), -1)).adjustOffset(matrix, false)
     }.shuffled()
 }

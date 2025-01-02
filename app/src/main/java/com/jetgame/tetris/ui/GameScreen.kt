@@ -41,6 +41,7 @@ import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jetgame.tetris.R
 import com.jetgame.tetris.logic.Brick
@@ -99,7 +100,7 @@ fun GameScreen(modifier: Modifier = Modifier) {
             drawMatrixBorder(brickSize, viewState.matrix)
             drawBricks(viewState.bricks/*testGenerateListBrick()*/, brickSize, viewState.matrix)
             drawSpirit(viewState.spirit/*testGenerateSpirit()*/, brickSize, viewState.matrix)
-            drawText(viewState.gameStatus, brickSize, viewState.matrix, /*animateValue*/1f)
+            drawText(viewState.gameStatus, brickSize, viewState.matrix, animateValue /*1f*/)
 
         }
         /**
@@ -113,7 +114,7 @@ fun GameScreen(modifier: Modifier = Modifier) {
         GameScoreboard(
             // 这里旋转的含义是，形状的高度可能大于2，但是面板这儿摆放的高度最多为2，任意形状旋转一下就能完全呈现得下 Optimize: 这里是不需要偏移的，因为反正是要做一层旋转的
             spirit = run {
-                if (viewState.spirit == Spirit.Empty) /*Spirit.Empty*/ testGenerateSpirit(downStep = false).rotate()
+                if (viewState.spirit == Spirit.Empty) Spirit.Empty /*testGenerateSpirit(downStep = false).rotate()*/
                 else viewState.spiritNext.rotate()
             },
             score = viewState.score,

@@ -119,7 +119,6 @@ fun LedNumber(
 
                 )
             }
-
         }
         Row(
             modifier = Modifier.align(Alignment.CenterEnd),
